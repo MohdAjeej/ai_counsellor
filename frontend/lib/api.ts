@@ -10,6 +10,8 @@ const api = axios.create({
   },
 });
 
+
+
 // Add token to requests (use store token if not in localStorage — e.g. after refresh from persist)
 api.interceptors.request.use((config) => {
   let token = localStorage.getItem('token');
@@ -20,7 +22,7 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  return config;
+  return config; 
 });
 
 // On 401: clear session only. Do NOT redirect — user stays on current page.
