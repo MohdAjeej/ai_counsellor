@@ -51,7 +51,7 @@ def startup():
     _ensure_tables()
 
 # CORS: use CORS_ORIGINS env (comma-separated) or default to localhost
-_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://ai-counsellor-opal.vercel.app")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins.split(",") if o.strip()],
@@ -444,6 +444,8 @@ async def delete_todo(
     return {"message": "Todo deleted successfully"}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    # uvicorn.run(app, host="0.0.0.0", port=port)
+
 
