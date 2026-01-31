@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -108,7 +108,32 @@ class UniversityShortlist(BaseModel):
 class UniversityLock(BaseModel):
     university_id: int
 
+
+class UniversityListResponse(BaseModel):
+    """Wrapper so shortlisted/locked APIs always return { data: [...] } for consistent frontend parsing."""
+    data: List[UniversityResponse]
+
+
 # Todo schemas
+def _parse_due_date(v):
+    """Accept YYYY-MM-DD or full ISO datetime string for due_date."""
+    if v is None or (isinstance(v, str) and not v.strip()):
+        return None
+    if isinstance(v, datetime):
+        return v
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+        try:
+            if "T" in s or " " in s:
+                return datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return datetime.strptime(s, "%Y-%m-%d")
+        except ValueError:
+            return None
+    return v
+
+
 class TodoCreate(BaseModel):
     university_id: Optional[int] = None
     title: str
@@ -116,12 +141,23 @@ class TodoCreate(BaseModel):
     priority: Optional[str] = "medium"
     due_date: Optional[datetime] = None
 
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def parse_due_date(cls, v):
+        return _parse_due_date(v)
+
+
 class TodoUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     priority: Optional[str] = None
     status: Optional[str] = None
     due_date: Optional[datetime] = None
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def parse_due_date(cls, v):
+        return _parse_due_date(v)
 
 class TodoResponse(BaseModel):
     id: int

@@ -215,6 +215,11 @@ export const CURRENCY_SYMBOL: Record<string, string> = {
   TND: 'DT',
 };
 
+/** All currencies for dropdowns (code + name), sorted by name. Use for Currency select in profile/onboarding. */
+export const ALL_CURRENCIES: { code: string; name: string }[] = Object.entries(CURRENCY_NAME)
+  .map(([code, name]) => ({ code, name }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
 /** Get currency symbol for code (e.g. EUR → €, INR → ₹). Falls back to code if unknown. */
 export function getCurrencySymbol(code: string): string {
   return CURRENCY_SYMBOL[code] || code + ' ';

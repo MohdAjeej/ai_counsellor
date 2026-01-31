@@ -3,7 +3,7 @@ from typing import Optional
 from hashlib import sha256
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 import os
@@ -47,25 +47,39 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    credentials_exception = HTTPException(
+def _credentials_exception():
+    return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def get_user_from_request(request: Request, db: Session) -> User:
+    """Validate Bearer token from request headers. Returns user or raises 401. No Depends() = no 422."""
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        raise _credentials_exception()
+    token = auth[7:].strip()
+    if not token:
+        raise _credentials_exception()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            raise credentials_exception
+            raise _credentials_exception()
     except JWTError:
-        raise credentials_exception
-    
+        raise _credentials_exception()
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        raise credentials_exception
+        raise _credentials_exception()
     return user
+
+
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> User:
+    """Validate Bearer token from Authorization header. Used via Depends() on other routes."""
+    return get_user_from_request(request, db)
 

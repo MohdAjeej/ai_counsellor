@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
-import { profileAPI } from '@/lib/api';
+import { profileAPI, authAPI } from '@/lib/api';
+import { ALL_CURRENCIES } from '@/lib/countryCurrency';
 import { GraduationCap, ArrowRight } from 'lucide-react';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push('/');
     } else if (user.is_onboarded) {
       router.push('/dashboard');
     }
@@ -80,6 +81,9 @@ export default function OnboardingPage() {
       };
 
       await profileAPI.create(submitData);
+      // Refresh user so is_onboarded is true; otherwise dashboard redirects back to onboarding
+      const userResponse = await authAPI.getMe();
+      setUser(userResponse.data);
       router.push('/dashboard');
     } catch (error: any) {
       alert(error.response?.data?.detail || 'Failed to save profile. Please try again.');
@@ -319,11 +323,9 @@ export default function OnboardingPage() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                      <option value="CAD">CAD</option>
-                      <option value="AUD">AUD</option>
+                      {ALL_CURRENCIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                        ))}
                     </select>
                   </div>
                   <div>

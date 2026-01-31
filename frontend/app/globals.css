@@ -20,6 +20,22 @@ body {
   }
 }
 
+/* Dashboard and card polish */
+@keyframes shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+.animate-subtle-pulse {
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+.shadow-soft {
+  box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.06), 0 6px 20px -4px rgba(0, 0, 0, 0.04);
+}
+.shadow-soft-hover:hover {
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.08), 0 16px 40px -8px rgba(0, 0, 0, 0.06);
+}
+
 /* Smooth focus for accessibility */
 *:focus-visible {
   @apply outline-2 outline-offset-2 outline-primary-500;

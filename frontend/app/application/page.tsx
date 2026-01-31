@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
-import { todoAPI, universityAPI } from '@/lib/api';
+import { todoAPI, universityAPI, getAuthToken } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import { CheckCircle, Circle, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
 
@@ -37,10 +37,11 @@ export default function ApplicationPage() {
     due_date: '',
     university_id: undefined as number | undefined,
   });
+  const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     if (!user.is_onboarded) {
@@ -52,16 +53,19 @@ export default function ApplicationPage() {
 
   const loadData = async () => {
     try {
+      const token = getAuthToken();
+      const lockedPromise = token ? universityAPI.getLocked() : Promise.resolve({ data: { data: [] } });
       const [todosRes, universitiesRes] = await Promise.all([
         todoAPI.getAll(),
-        universityAPI.getLocked(),
+        lockedPromise,
       ]);
       setTodos(todosRes.data);
-      setLockedUniversities(universitiesRes.data);
+      const lockedList = Array.isArray(universitiesRes.data) ? universitiesRes.data : (universitiesRes.data?.data ?? []);
+      setLockedUniversities(lockedList);
       
-      if (universitiesRes.data.length === 0) {
+      if (lockedList.length === 0) {
         // Generate default to-dos if none exist
-        generateDefaultTodos(universitiesRes.data);
+        generateDefaultTodos(lockedList);
       }
     } catch (error) {
       console.error('Error loading application data:', error);
@@ -116,11 +120,33 @@ export default function ApplicationPage() {
     }
   };
 
+  const getErrorMessage = (error: any, fallback: string) => {
+    const detail = error?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const messages = detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).filter(Boolean);
+      return messages.length ? messages.join('. ') : fallback;
+    }
+    if (detail && typeof detail === 'object') return JSON.stringify(detail);
+    return fallback;
+  };
+
   const handleAddTodo = async () => {
     if (!newTodo.title.trim()) return;
 
+    const payload: Record<string, unknown> = {
+      title: newTodo.title.trim(),
+      description: newTodo.description?.trim() || undefined,
+      priority: newTodo.priority,
+      university_id: newTodo.university_id ?? undefined,
+    };
+    if (newTodo.due_date && newTodo.due_date.trim()) {
+      // Backend expects ISO datetime (e.g. YYYY-MM-DDTHH:mm:ss); date input gives YYYY-MM-DD
+      payload.due_date = `${newTodo.due_date.trim()}T00:00:00`;
+    }
+
     try {
-      await todoAPI.create(newTodo);
+      await todoAPI.create(payload);
       setNewTodo({
         title: '',
         description: '',
@@ -131,7 +157,7 @@ export default function ApplicationPage() {
       setShowAddModal(false);
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Failed to create todo');
+      alert(getErrorMessage(error, 'Failed to create todo. Please try again.'));
     }
   };
 
@@ -141,7 +167,7 @@ export default function ApplicationPage() {
       await todoAPI.update(todo.id, { status: newStatus });
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Failed to update todo');
+      alert(getErrorMessage(error, 'Failed to update todo. Please try again.'));
     }
   };
 
@@ -152,7 +178,7 @@ export default function ApplicationPage() {
       await todoAPI.delete(id);
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.detail || 'Failed to delete todo');
+      alert(getErrorMessage(error, 'Failed to delete todo. Please try again.'));
     }
   };
 
@@ -227,6 +253,43 @@ export default function ApplicationPage() {
           </button>
         </div>
 
+        {/* Progress summary */}
+        {todos.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+            <div className="flex items-center justify-between gap-4 mb-2">
+              <span className="text-sm font-medium text-gray-700">Application progress</span>
+              <span className="text-sm font-semibold text-primary-600">
+                {completedTodos.length} of {todos.length} tasks completed
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary-500 transition-all duration-300"
+                style={{ width: `${todos.length ? (completedTodos.length / todos.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Task filter tabs */}
+        <div className="flex gap-2 mb-6">
+          {(['all', 'pending', 'completed'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setTaskFilter(tab)}
+              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${
+                taskFilter === tab
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {tab === 'all' && `All (${todos.length})`}
+              {tab === 'pending' && `Pending (${pendingTodos.length})`}
+              {tab === 'completed' && `Completed (${completedTodos.length})`}
+            </button>
+          ))}
+        </div>
+
         {/* Locked Universities */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Locked Universities</h2>
@@ -243,6 +306,7 @@ export default function ApplicationPage() {
         </div>
 
         {/* Pending Todos */}
+        {(taskFilter === 'all' || taskFilter === 'pending') && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Pending Tasks ({pendingTodos.length})
@@ -302,13 +366,15 @@ export default function ApplicationPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Completed Todos */}
-        {completedTodos.length > 0 && (
+        {(taskFilter === 'all' || taskFilter === 'completed') && (
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               Completed Tasks ({completedTodos.length})
             </h2>
+            {completedTodos.length > 0 ? (
             <div className="space-y-3">
               {completedTodos.map((todo) => (
                 <div
@@ -340,6 +406,11 @@ export default function ApplicationPage() {
                 </div>
               ))}
             </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm p-6 text-center text-gray-600">
+                No completed tasks yet.
+              </div>
+            )}
           </div>
         )}
       </div>

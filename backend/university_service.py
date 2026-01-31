@@ -55,7 +55,7 @@ class UniversityService:
         # Sort by match score (highest first)
         scored_universities.sort(key=lambda x: x[0], reverse=True)
         
-        return [UniversityResponse(**uni.__dict__) for _, uni in scored_universities]
+        return [UniversityResponse.model_validate(uni) for _, uni in scored_universities]
     
     def _calculate_match_score(self, university: University, profile: Optional[UserProfile]) -> float:
         """Calculate how well a university matches the user profile"""

@@ -48,7 +48,7 @@ export default function RegisterPage() {
         full_name: formData.full_name,
       });
 
-      // Auto-login after registration
+      // Auto-login after registration for a seamless experience
       const loginResponse = await authAPI.login(formData.email, formData.password);
       const { access_token } = loginResponse.data;
       
@@ -57,7 +57,8 @@ export default function RegisterPage() {
       const userResponse = await authAPI.getMe();
       setUser(userResponse.data);
       
-      router.push('/onboarding');
+      // Redirect to dashboard; dashboard will send new users to onboarding if needed
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('Registration error:', err);
       
@@ -115,8 +116,10 @@ export default function RegisterPage() {
               value={formData.full_name}
               onChange={handleChange}
               required
+              autoComplete="name"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="John Doe"
+              suppressHydrationWarning
             />
           </div>
 
@@ -131,8 +134,10 @@ export default function RegisterPage() {
               value={formData.email}
               onChange={handleChange}
               required
+              autoComplete="email"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               placeholder="you@example.com"
+              suppressHydrationWarning
             />
           </div>
 
@@ -151,6 +156,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="••••••••"
+                suppressHydrationWarning
               />
               <button
                 type="button"
@@ -187,6 +193,7 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="••••••••"
+                suppressHydrationWarning
               />
               <button
                 type="button"

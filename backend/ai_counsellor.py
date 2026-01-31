@@ -15,12 +15,19 @@ class AICounsellor:
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
         genai.configure(api_key=api_key)
-        # Default: gemini-1.0-pro often has free-tier quota. Set GEMINI_MODEL in .env to override.
-        # See https://ai.google.dev/gemini-api/docs/rate-limits and .../docs/models
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.0-pro")
+        # Supported models for generateContent (v1beta): gemini-2.0-flash, gemini-2.5-flash, etc.
+        # gemini-1.5-flash is deprecated/removed (404) — if set in .env, use a working model instead.
+        _deprecated_models = {
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-flash-8b",
+        }
+        model_name = (os.getenv("GEMINI_MODEL") or "").strip() or "gemini-2.0-flash"
+        if model_name in _deprecated_models or "gemini-1.5-flash" in model_name:
+            model_name = "gemini-2.0-flash"
         self.model = genai.GenerativeModel(model_name)
         self._model_name = model_name
-        self._fallbacks = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"]
+        self._fallbacks = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3-flash-preview"]
     
     def _generate(self, prompt: str) -> str:
         """Generate content; on 404 or 429 try fallback models."""

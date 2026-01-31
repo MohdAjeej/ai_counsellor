@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -10,10 +10,10 @@ from models import User, UserProfile, University, ShortlistedUniversity, LockedU
 from schemas import (
     UserCreate, UserResponse, UserLogin, Token,
     ProfileCreate, ProfileResponse,
-    UniversityResponse, UniversityShortlist, UniversityLock,
+    UniversityResponse, UniversityShortlist, UniversityLock, UniversityListResponse,
     TodoCreate, TodoResponse, TodoUpdate
 )
-from auth import get_current_user, create_access_token, verify_password, get_password_hash
+from auth import get_current_user, get_user_from_request, create_access_token, verify_password, get_password_hash
 from ai_counsellor import AICounsellor
 from university_service import UniversityService
 
@@ -192,7 +192,7 @@ async def get_profile_analysis(
     analysis = await ai_counsellor.analyze_profile(profile)
     return {"analysis": analysis}
 
-# University endpoints
+# University endpoints (static paths first so /shortlisted, /locked, /lock are not matched as {university_id})
 @app.get("/api/universities", response_model=list[UniversityResponse])
 async def get_universities(
     country: str = None,
@@ -242,11 +242,9 @@ async def shortlist_university(
     
     return {"message": "University shortlisted successfully"}
 
-@app.get("/api/universities/shortlisted", response_model=list[UniversityResponse])
-async def get_shortlisted_universities(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+@app.get("/api/universities/shortlisted")
+async def get_shortlisted_universities(request: Request, db: Session = Depends(get_db)):
+    current_user = get_user_from_request(request, db)
     shortlisted = db.query(ShortlistedUniversity).filter(
         ShortlistedUniversity.user_id == current_user.id
     ).all()
@@ -255,9 +253,11 @@ async def get_shortlisted_universities(
     for item in shortlisted:
         university = db.query(University).filter(University.id == item.university_id).first()
         if university:
-            universities.append(UniversityResponse(**university.__dict__))
-    
-    return universities
+            try:
+                universities.append(UniversityResponse.model_validate(university))
+            except Exception:
+                pass
+    return {"data": [u.model_dump() for u in universities]}
 
 @app.post("/api/universities/lock", status_code=status.HTTP_201_CREATED)
 async def lock_university(
@@ -288,19 +288,16 @@ async def lock_university(
         university_id=data.university_id
     )
     db.add(locked)
-    
+    db.flush()  # ensure insert is written before commit
     # Update user stage to application
     current_user.current_stage = "application"
-    
     db.commit()
-    
+    db.refresh(locked)
     return {"message": "University locked successfully"}
 
-@app.get("/api/universities/locked", response_model=list[UniversityResponse])
-async def get_locked_universities(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+@app.get("/api/universities/locked")
+async def get_locked_universities(request: Request, db: Session = Depends(get_db)):
+    current_user = get_user_from_request(request, db)
     locked = db.query(LockedUniversity).filter(
         LockedUniversity.user_id == current_user.id
     ).all()
@@ -309,9 +306,11 @@ async def get_locked_universities(
     for item in locked:
         university = db.query(University).filter(University.id == item.university_id).first()
         if university:
-            universities.append(UniversityResponse(**university.__dict__))
-    
-    return universities
+            try:
+                universities.append(UniversityResponse.model_validate(university))
+            except Exception:
+                pass
+    return {"data": [u.model_dump() for u in universities]}
 
 @app.delete("/api/universities/lock/{university_id}")
 async def unlock_university(
@@ -331,6 +330,19 @@ async def unlock_university(
     db.commit()
     
     return {"message": "University unlocked successfully"}
+
+@app.get("/api/universities/{university_id}", response_model=UniversityResponse)
+async def get_university_by_id(
+    university_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.is_onboarded:
+        raise HTTPException(status_code=400, detail="Please complete onboarding first")
+    university = db.query(University).filter(University.id == university_id).first()
+    if not university:
+        raise HTTPException(status_code=404, detail="University not found")
+    return UniversityResponse.model_validate(university)
 
 # Todo endpoints
 @app.get("/api/todos", response_model=list[TodoResponse])

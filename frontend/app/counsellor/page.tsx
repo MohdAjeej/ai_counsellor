@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { counsellorAPI } from '@/lib/api';
 import Navbar from '@/components/Navbar';
-import { Brain, Send, Loader2 } from 'lucide-react';
+import { Brain, Send, Loader2, RotateCcw } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -13,8 +13,16 @@ interface Message {
   timestamp: Date;
 }
 
+const SUGGESTIONS: Record<string, string> = {
+  recommendations: 'Recommend universities that match my profile and budget.',
+  profile: 'Analyze my profile and explain my strengths and gaps.',
+  shortlist: 'Help me shortlist universities. Which should be Dream, Target, or Safe?',
+  next: 'What should I do next in my study-abroad journey?',
+};
+
 export default function CounsellorPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -29,7 +37,7 @@ export default function CounsellorPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
     if (!user.is_onboarded) {
@@ -39,8 +47,24 @@ export default function CounsellorPage() {
   }, [user, router]);
 
   useEffect(() => {
+    const suggestion = searchParams.get('suggestion');
+    if (suggestion && SUGGESTIONS[suggestion]) setInput(SUGGESTIONS[suggestion]);
+  }, [searchParams]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const initialMessage: Message = {
+    role: 'assistant',
+    content: "Hello! I'm your AI Counsellor. I'm here to help you make confident study-abroad decisions. How can I assist you today?",
+    timestamp: new Date(),
+  };
+
+  const handleNewConversation = () => {
+    setMessages([initialMessage]);
+    setInput('');
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,9 +107,21 @@ export default function CounsellorPage() {
       <Navbar />
       
       <div className="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
-        <div className="flex items-center space-x-3 mb-6">
-          <Brain className="w-8 h-8 text-primary-600" />
-          <h1 className="text-3xl font-bold text-gray-900">AI Counsellor</h1>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center space-x-3">
+            <Brain className="w-8 h-8 text-primary-600" />
+            <h1 className="text-3xl font-bold text-gray-900">AI Counsellor</h1>
+          </div>
+          {messages.length > 1 && (
+            <button
+              type="button"
+              onClick={handleNewConversation}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start new conversation
+            </button>
+          )}
         </div>
 
         {/* Messages */}

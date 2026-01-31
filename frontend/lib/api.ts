@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/lib/store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -9,22 +10,26 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
+// Add token to requests (use store token if not in localStorage — e.g. after refresh from persist)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  let token = localStorage.getItem('token');
+  if (!token && typeof window !== 'undefined') {
+    token = useAuthStore.getState().token ?? null;
+    if (token) localStorage.setItem('token', token);
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle token expiration
+// On 401: clear session only. Do NOT redirect — user stays on current page.
+// Login page is only shown when user clicks "Login" from the landing page.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   }
@@ -53,10 +58,26 @@ export const counsellorAPI = {
   getAnalysis: () => api.get('/api/counsellor/analysis'),
 };
 
+/** Get token from store or localStorage so we only call auth-required APIs when token exists (avoids 422). */
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token') ?? useAuthStore.getState().token ?? null;
+}
+
+/** Extract list from shortlisted/locked API response. Backend returns { data: [...] }. */
+export function getUniversityListFromResponse(res: any): any[] {
+  if (!res) return [];
+  const body = res.data;
+  if (Array.isArray(body)) return body;
+  if (body && Array.isArray(body.data)) return body.data;
+  return [];
+}
+
 // University APIs
 export const universityAPI = {
   getAll: (params?: { country?: string; budget_min?: number; budget_max?: number; show_all?: boolean }) =>
     api.get('/api/universities', { params }),
+  getById: (id: number) => api.get(`/api/universities/${id}`),
   shortlist: (data: { university_id: number; category: string; notes?: string }) =>
     api.post('/api/universities/shortlist', data),
   getShortlisted: () => api.get('/api/universities/shortlisted'),
