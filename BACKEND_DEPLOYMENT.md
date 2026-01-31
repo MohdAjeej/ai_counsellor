@@ -18,8 +18,10 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 
 1. Go to [railway.app](https://railway.app) and sign in (e.g. GitHub).
 2. **New Project** → **Deploy from GitHub** → select your repo.
-3. **Important:** Set **Root Directory** to **`backend`** (so Railway sees `Dockerfile` and `requirements.txt`). If you skip this, you get "Error creating build plan with Railpack."
-4. Railway will detect the **Dockerfile** in `backend/` and build with Docker (no Railpack needed).
+3. **Root Directory:** Either:
+   - Set **Root Directory** to **`backend`** (Railway uses `backend/Dockerfile`), or
+   - Leave root as **`.`** (repo root). A **root-level `Dockerfile`** and **`railway.json`** are included so Railway builds the backend from root and you don’t get "Railpack could not determine how to build the app."
+4. Railway will use the **Dockerfile** (from root or from `backend/`) and build with Docker (no Railpack).
 5. Add **PostgreSQL**: in the project → **New** → **Database** → **PostgreSQL**. Railway sets `DATABASE_URL` automatically.
 6. In the **backend service** → **Variables**, add:
    - `SECRET_KEY` – a long random string (e.g. from `openssl rand -hex 32`)

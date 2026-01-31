@@ -1,0 +1,11 @@
+# When building from repo root, exclude everything except backend
+frontend
+.git
+*.md
+.env
+.env.*
+*.bat
+__pycache__
+*.pyc
+.venv
+venv
