@@ -463,6 +463,7 @@ from contextlib import asynccontextmanager
 import os
 import threading
 from dotenv import load_dotenv
+import traceback
 
 from database import get_db, engine, Base
 from models import User, UserProfile, University, ShortlistedUniversity, LockedUniversity, TodoTask
@@ -565,25 +566,42 @@ async def health():
 # --------------------------------------------------
 @app.post("/api/auth/register", response_model=UserResponse, status_code=201)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+    try:
+        print("➡️ REGISTER CALLED:", user_data)
 
-    user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        hashed_password=get_password_hash(user_data.password),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        existing = db.query(User).filter(User.email == user_data.email).first()
+        print("➡️ EXISTING USER:", existing)
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        full_name=user.full_name,
-        is_onboarded=user.is_onboarded,
-        current_stage=user.current_stage,
-    )
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        hashed = get_password_hash(user_data.password)
+        print("➡️ PASSWORD HASHED")
+
+        user = User(
+            email=user_data.email,
+            full_name=user_data.full_name,
+            hashed_password=hashed,
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        print("➡️ USER CREATED:", user.id)
+
+        return UserResponse(
+            id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            is_onboarded=user.is_onboarded,
+            current_stage=user.current_stage,
+        )
+
+    except Exception as e:
+        print("🔥 REGISTER ERROR:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/auth/login", response_model=Token)
