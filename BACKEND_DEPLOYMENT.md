@@ -24,8 +24,13 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
    - Leave root as **`.`** (repo root). A **root-level `Dockerfile`** and **`railway.json`** are included so Railway builds the backend from root and you don’t get "Railpack could not determine how to build the app."
 4. Railway will use the **Dockerfile** (from root or from `backend/`) and build with Docker (no Railpack).
 5. Add **PostgreSQL**: in the project → **New** → **Database** → **PostgreSQL**. Railway sets `DATABASE_URL` automatically.
-6. **Set environment variables in Railway** (Railway does **not** use a `.env` file from the repo—you must add them in the dashboard). Open your **backend service** → **Variables**, then add each variable from the table below. See also `backend/.env.example` for the list of variable names.
-7. **Settings** → **Deploy**: ensure **Root Directory** is `backend` (or leave empty if using root Dockerfile). Start command is `./start.sh` (in `railway.json`).
+6. In the **backend service** → **Variables**, add:
+   - `SECRET_KEY` – a long random string (e.g. from `openssl rand -hex 32`)
+   - `GEMINI_API_KEY` – your Gemini API key
+   - `GEMINI_MODEL` – e.g. `gemini-2.0-flash`
+   - `CORS_ORIGINS` – your frontend URL, e.g. `https://your-app.vercel.app` (comma-separated if you have several)
+   - `DATABASE_URL` is usually **auto-set** when you link PostgreSQL to the service; if not, copy it from the PostgreSQL service → **Connect**.
+7. **Settings** → **Deploy**: ensure **Root Directory** is `backend` (or leave empty if using root Dockerfile). Build uses the Dockerfile; start command is `./start.sh` (set in `railway.json`—do **not** use `uvicorn ... $PORT` directly, as `$PORT` may not be expanded).
 8. Deploy. Copy the public URL (e.g. `https://xxx.railway.app`) and set it as `NEXT_PUBLIC_API_URL` in Vercel (frontend).
 
 ### Railway: variables to set (Service → Variables)
@@ -49,7 +54,7 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 3. **Root Directory**: `backend`.
 4. **Environment**: Python 3.
 5. **Build Command**: `pip install -r requirements.txt`
-6. **Start Command**: `./start.sh` (uses `backend/start.sh` so `PORT` is set correctly; or use `uvicorn main:app --host 0.0.0.0 --port $PORT` if your plan expands env vars).
+6. **Start Command**: `./start.sh` (uses `backend/start.sh` so `PORT` is set correctly).
 7. **New** → **PostgreSQL** to create a database; copy the **Internal Database URL** (or External if you need it from outside Render).
 8. In the **Web Service** → **Environment**:
    - `DATABASE_URL` = the PostgreSQL URL from step 7
