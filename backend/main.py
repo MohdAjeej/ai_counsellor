@@ -461,6 +461,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 import os
+import threading
 from dotenv import load_dotenv
 
 from database import get_db, engine, Base
@@ -485,20 +486,31 @@ load_dotenv()
 
 # --------------------------------------------------
 # DATABASE INIT (SAFE FOR RAILWAY)
-# --------------------------------------------------
-def _ensure_tables():
+# # --------------------------------------------------
+# def _ensure_tables():
+#     try:
+#         Base.metadata.create_all(bind=engine)
+#     except Exception as e:
+#         print("⚠️ Database not ready yet:", e)
+
+def _ensure_tables_async():
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        print("⚠️ Database not ready yet:", e)
-
+        print("DB init skipped:", e)
 
 # --------------------------------------------------
 # LIFESPAN (REPLACES on_event)
 # --------------------------------------------------
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     _ensure_tables()
+#     yield
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _ensure_tables()
+    threading.Thread(target=_ensure_tables_async, daemon=True).start()
     yield
 
 
