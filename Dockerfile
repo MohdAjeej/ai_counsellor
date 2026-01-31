@@ -7,10 +7,11 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Backend code
+# Backend code (includes start.sh)
 COPY backend/ .
+RUN chmod +x start.sh
 
 ENV PORT=8000
-EXPOSE $PORT
+EXPOSE 8000
 
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+CMD ["./start.sh"]

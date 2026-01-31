@@ -10,9 +10,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Railway sets PORT; default for local
+# Railway sets PORT at runtime; default for local
 ENV PORT=8000
-EXPOSE $PORT
+EXPOSE 8000
 
-# Run FastAPI with uvicorn
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+# start.sh reads PORT from env so Railway's $PORT is used
+COPY start.sh .
+RUN chmod +x start.sh
+CMD ["./start.sh"]
