@@ -514,23 +514,20 @@ app = FastAPI(
 # --------------------------------------------------
 # ✅ CORS (FINAL, WORKING WITH VERCEL + RAILWAY)
 # --------------------------------------------------
-FRONTEND_ORIGINS = [
-    "https://ai-counsellor-delta.vercel.app",
-    "http://localhost:3000",
-]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=FRONTEND_ORIGINS,
+    allow_origins=[
+        "https://ai-counsellor-delta.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ✅ FORCE PREFLIGHT TO ALWAYS SUCCEED
-@app.options("/{path:path}")
-async def preflight_handler(path: str):
-    return {}
+
 
 # --------------------------------------------------
 # AUTH / SERVICES
