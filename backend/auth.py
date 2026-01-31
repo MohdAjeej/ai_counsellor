@@ -26,13 +26,7 @@ def _password_to_bcrypt_input(password: str) -> str:
     return sha256(password.encode("utf-8")).hexdigest()  # always 64 bytes to bcrypt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # New format: bcrypt(sha256(password)) - supports any password length
-    if pwd_context.verify(_password_to_bcrypt_input(plain_password), hashed_password):
-        return True
-    # Legacy: bcrypt(plain_password) - for accounts created before this fix
-    if pwd_context.verify(plain_password, hashed_password):
-        return True
-    return False
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(_password_to_bcrypt_input(password))
