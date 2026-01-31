@@ -12,6 +12,10 @@ A guided, stage-based platform designed to help students make confident and info
 - **Application Guidance**: Actionable to-dos and timelines for locked universities
 - **Stage-Based Progression**: Clear journey from onboarding to application
 
+## ⚡ Vercel deploy (frontend)
+
+**Set Root Directory to `frontend`** in Vercel → Project → **Settings** → **General** → **Root Directory** → `frontend` → Save. Then redeploy. Otherwise the build may fail when running from repo root.
+
 ## 📁 Project Structure
 
 ```
