@@ -10,6 +10,7 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 |-----------|------------------|-----------|------------|
 | **Railway** | Easiest, one-click | Yes       | Yes (add-on) |
 | **Render**  | Simple, good docs  | Yes       | Yes (free tier) |
+| **Koyeb**   | Docker, simple     | Yes       | Yes (add-on) |
 | **Fly.io**  | Global, containers | Yes       | Yes (add-on) |
 
 ---
@@ -48,7 +49,7 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 3. **Root Directory**: `backend`.
 4. **Environment**: Python 3.
 5. **Build Command**: `pip install -r requirements.txt`
-6. **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+6. **Start Command**: `./start.sh` (uses `backend/start.sh` so `PORT` is set correctly; or use `uvicorn main:app --host 0.0.0.0 --port $PORT` if your plan expands env vars).
 7. **New** → **PostgreSQL** to create a database; copy the **Internal Database URL** (or External if you need it from outside Render).
 8. In the **Web Service** → **Environment**:
    - `DATABASE_URL` = the PostgreSQL URL from step 7
@@ -60,7 +61,21 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 
 ---
 
-## 3. Fly.io
+## 3. Koyeb (Docker)
+
+1. Go to [koyeb.com](https://www.koyeb.com) and sign in.
+2. **Create App** → **Docker** → connect your GitHub repo.
+3. **Dockerfile path**: `backend/Dockerfile` (or set **Root directory** to `backend` and use `Dockerfile`).
+4. **Port**: leave default or set to `8000`; Koyeb sets `PORT` at runtime (use `backend/start.sh` in the image).
+5. **Add PostgreSQL**: Koyeb → **Data** → **PostgreSQL**; create a database and copy the connection URL.
+6. **Environment variables** (in the service → **Variables**):
+   - `DATABASE_URL` = PostgreSQL URL
+   - `SECRET_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `CORS_ORIGINS` (same as table above).
+7. Deploy. Use the Koyeb URL (e.g. `https://your-app.koyeb.app`) as `NEXT_PUBLIC_API_URL` in Vercel.
+
+---
+
+## 4. Fly.io
 
 1. Install [flyctl](https://fly.io/docs/hackers/install-flyctl/) and sign in: `fly auth login`.
 2. In your repo root: `cd backend` then `fly launch` (follow prompts; choose a region).
@@ -92,6 +107,17 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 
 ---
 
+## Fix: SQLAlchemy e3q8 / connection errors on deploy
+
+If you see **sqlalche.me/e/20/e3q8** or connection/OperationalError when deploying:
+
+1. **DATABASE_URL** must be set in the platform (Railway/Render/etc.). If you added PostgreSQL, link it to the backend service so `DATABASE_URL` is set automatically.
+2. **postgres:// vs postgresql://** – Some platforms set `postgres://`; the app converts it to `postgresql://` in code. If you set `DATABASE_URL` manually, use `postgresql://...`.
+3. **Check the URL** – In Railway: PostgreSQL service → **Variables** or **Connect** → copy the URL. In Render: PostgreSQL → **Internal Database URL**. Paste it into your backend service’s `DATABASE_URL` (no quotes in the dashboard).
+4. **Tables** – Tables are created on app startup. If the DB is unreachable at startup, the app still starts but logs a warning; fix `DATABASE_URL` and redeploy.
+
+---
+
 ## After deployment
 
 1. **Frontend**: In Vercel → **Settings** → **Environment Variables**, add:
@@ -103,8 +129,9 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 
 ## Quick summary
 
-- **Easiest**: Railway (GitHub → New Project → backend as root, add Postgres, set env vars).
-- **Also easy**: Render (Web Service + PostgreSQL, set root to `backend`, same env vars).
-- **More control**: Fly.io (CLI, Postgres add-on, `fly secrets` for env).
+- **Railway**: GitHub → New Project → Root Directory `backend`, Builder Dockerfile, add Postgres, set env vars.
+- **Render**: Web Service + PostgreSQL, Root Directory `backend`, Start Command `./start.sh`, same env vars.
+- **Koyeb**: Docker deploy from repo, Dockerfile path `backend/Dockerfile`, add Postgres, set env vars.
+- **Fly.io**: CLI (`fly launch` from `backend`), Postgres add-on, `fly secrets` for env.
 
 Use the same env vars everywhere; only the **backend URL** and **CORS_ORIGINS** change per deployment.

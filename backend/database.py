@@ -6,9 +6,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/ai_counsellor")
+# Raw URL from env (Railway/Render/Heroku often use postgres://; SQLAlchemy needs postgresql://)
+_raw_url = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/ai_counsellor")
+if _raw_url and _raw_url.startswith("postgres://"):
+    DATABASE_URL = _raw_url.replace("postgres://", "postgresql://", 1)
+else:
+    DATABASE_URL = _raw_url
 
-engine = create_engine(DATABASE_URL)
+# pool_pre_ping: avoid "connection already closed"; pool_recycle: avoid stale connections on cloud
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

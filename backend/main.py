@@ -19,10 +19,19 @@ from university_service import UniversityService
 
 load_dotenv()
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Create tables on startup (deferred so app can start even if DB is briefly unreachable)
+def _ensure_tables():
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        import logging
+        logging.getLogger("uvicorn.error").warning("Could not create DB tables (check DATABASE_URL): %s", e)
 
 app = FastAPI(title="AI Counsellor API", version="1.0.0")
+
+@app.on_event("startup")
+def startup():
+    _ensure_tables()
 
 # CORS: use CORS_ORIGINS env (comma-separated) or default to localhost
 _cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
