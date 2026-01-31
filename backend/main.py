@@ -22,14 +22,26 @@ load_dotenv()
 # Create tables on startup (deferred so app can start even if DB is briefly unreachable)
 def _ensure_tables():
     import logging
+    import os
     log = logging.getLogger("uvicorn.error")
+    db_url = (os.getenv("DATABASE_URL") or "").strip()
+    # Empty or localhost DB URL in cloud = wrong config (default in database.py is localhost)
+    is_localhost = not db_url or "localhost" in db_url or "127.0.0.1" in db_url
+    is_cloud = os.getenv("PORT")  # Railway/Render set PORT
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        log.warning(
-            "Could not create DB tables: %s. Start PostgreSQL locally (e.g. pg_ctl start or Docker) or set DATABASE_URL to your database.",
-            e,
-        )
+        if is_cloud and is_localhost:
+            log.warning(
+                "Could not create DB tables: DATABASE_URL points to localhost but this app is running in the cloud. "
+                "In Railway (or your host): add a PostgreSQL service, then in the backend service → Variables set "
+                "DATABASE_URL to the PostgreSQL connection URL (from the DB service). Do not use localhost."
+            )
+        else:
+            log.warning(
+                "Could not create DB tables: %s. Start PostgreSQL locally or set DATABASE_URL to your database.",
+                e,
+            )
 
 app = FastAPI(title="AI Counsellor API", version="1.0.0")
 
