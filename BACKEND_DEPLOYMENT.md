@@ -23,13 +23,21 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
    - Leave root as **`.`** (repo root). A **root-level `Dockerfile`** and **`railway.json`** are included so Railway builds the backend from root and you don’t get "Railpack could not determine how to build the app."
 4. Railway will use the **Dockerfile** (from root or from `backend/`) and build with Docker (no Railpack).
 5. Add **PostgreSQL**: in the project → **New** → **Database** → **PostgreSQL**. Railway sets `DATABASE_URL` automatically.
-6. In the **backend service** → **Variables**, add:
-   - `SECRET_KEY` – a long random string (e.g. from `openssl rand -hex 32`)
-   - `GEMINI_API_KEY` – your Gemini API key
-   - `GEMINI_MODEL` – e.g. `gemini-2.0-flash`
-   - `CORS_ORIGINS` – your frontend URL, e.g. `https://your-app.vercel.app` (comma-separated if you have several)
-7. **Settings** → **Deploy**: ensure **Root Directory** is `backend`. Build uses the Dockerfile; start command is in `railway.json` (or set **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`).
+6. **Set environment variables in Railway** (Railway does **not** use a `.env` file from the repo—you must add them in the dashboard). Open your **backend service** → **Variables**, then add each variable from the table below. See also `backend/.env.example` for the list of variable names.
+7. **Settings** → **Deploy**: ensure **Root Directory** is `backend` (or leave empty if using root Dockerfile). Start command is `./start.sh` (in `railway.json`).
 8. Deploy. Copy the public URL (e.g. `https://xxx.railway.app`) and set it as `NEXT_PUBLIC_API_URL` in Vercel (frontend).
+
+### Railway: variables to set (Service → Variables)
+
+| Variable | Required | Where to get it / example |
+|----------|----------|---------------------------|
+| `DATABASE_URL` | Yes | Usually **auto-set** when you add PostgreSQL and link it to the service. If not, copy from PostgreSQL service → Connect → Postgres connection URL. |
+| `SECRET_KEY` | Yes | Long random string (e.g. run `openssl rand -hex 32` locally and paste). |
+| `GEMINI_API_KEY` | Yes | Your API key from [Google AI Studio](https://aistudio.google.com/apikey). |
+| `GEMINI_MODEL` | No | e.g. `gemini-2.0-flash` (default in code). |
+| `CORS_ORIGINS` | Yes (prod) | Your Vercel frontend URL, e.g. `https://your-app.vercel.app` (comma-separated if several). |
+| `ALGORITHM` | No | `HS256` (default). |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `30` (default). |
 
 ---
 
