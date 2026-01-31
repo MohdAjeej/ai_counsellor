@@ -51,7 +51,7 @@ def startup():
     _ensure_tables()
 
 # CORS: use CORS_ORIGINS env (comma-separated) or default to localhost
-_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://ai-counsellor-opal.vercel.app")
+_cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://ai-counsellor-delta.vercel.app/")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in _cors_origins.split(",") if o.strip()],
