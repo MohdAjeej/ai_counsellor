@@ -30,7 +30,7 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
    - `GEMINI_MODEL` – e.g. `gemini-2.0-flash`
    - `CORS_ORIGINS` – your frontend URL, e.g. `https://your-app.vercel.app` (comma-separated if you have several)
    - `DATABASE_URL` is usually **auto-set** when you link PostgreSQL to the service; if not, copy it from the PostgreSQL service → **Connect**.
-7. **Settings** → **Deploy**: ensure **Root Directory** is `backend` (or leave empty if using root Dockerfile). Build uses the Dockerfile; start command is `./start.sh` (set in `railway.json`—do **not** use `uvicorn ... $PORT` directly, as `$PORT` may not be expanded).
+7. **Settings** → **Deploy**: ensure **Root Directory** is `backend` (or leave empty if using root Dockerfile). Build uses the Dockerfile; start command is `./start.sh` (set in `railway.json`—do **not** use `uvicorn ... $PORT` directly, as `$PORT` may not be expanded). **Healthcheck**: use path **`/health`** (returns 200 when ready); timeout is 90s in `railway.json`. Railway calls the healthcheck from `healthcheck.railway.app`—if you add host restrictions later, allow that hostname.
 8. Deploy. Copy the public URL (e.g. `https://xxx.railway.app`) and set it as `NEXT_PUBLIC_API_URL` in Vercel (frontend).
 
 ### Railway: variables to set (Service → Variables)

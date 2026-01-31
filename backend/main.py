@@ -53,8 +53,10 @@ university_service = UniversityService()
 async def root():
     return {"message": "AI Counsellor API", "version": "1.0.0"}
 
+@app.get("/health")
 @app.get("/api/health")
 async def health_check():
+    """Railway and others use /health for healthchecks; must return 200 when ready."""
     return {"status": "healthy"}
 
 # Authentication endpoints

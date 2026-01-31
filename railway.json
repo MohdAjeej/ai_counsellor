@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "./start.sh",
-    "healthcheckPath": "/api/health",
-    "healthcheckTimeout": 30
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 90
   }
 }
