@@ -34,8 +34,8 @@ def _ensure_tables():
         if is_cloud and is_localhost:
             log.warning(
                 "Could not create DB tables: DATABASE_URL points to localhost but this app is running in the cloud. "
-                "In Railway (or your host): add a PostgreSQL service, then in the backend service → Variables set "
-                "DATABASE_URL to the PostgreSQL connection URL (from the DB service). Do not use localhost."
+                "Fix: In Railway → PostgreSQL service → Variables/Connect, copy the Postgres URL. "
+                "Then in your backend service → Variables, set DATABASE_URL to that URL and redeploy. See BACKEND_DEPLOYMENT.md."
             )
         else:
             log.warning(

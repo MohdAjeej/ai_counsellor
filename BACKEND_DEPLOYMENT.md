@@ -112,6 +112,21 @@ Deploy the **backend** (Python FastAPI + PostgreSQL) on one of these platforms. 
 
 ---
 
+## Fix: "DATABASE_URL points to localhost but this app is running in the cloud"
+
+If you see this **WARNING** in Railway (or similar) logs:
+
+- **Cause:** The backend service has no `DATABASE_URL` set (or it’s still the default localhost). In the cloud there is no PostgreSQL on localhost.
+- **Fix (Railway):**
+  1. In your Railway project, click **New** → **Database** → **PostgreSQL** (if you don’t have a database yet).
+  2. Click your **PostgreSQL** service → **Variables** or **Connect** tab.
+  3. Copy the **Postgres connection URL** (often named `DATABASE_URL` or shown as “Postgres URL”).
+  4. Click your **backend (API) service** → **Variables**.
+  5. Add a variable: name **`DATABASE_URL`**, value = the URL you copied (starts with `postgresql://` or `postgres://`; both work).
+  6. **Redeploy** the backend service (e.g. **Deploy** → **Redeploy** or push a commit). After redeploy, the warning should disappear and DB tables will be created.
+
+---
+
 ## Fix: SQLAlchemy e3q8 / connection errors on deploy
 
 If you see **sqlalche.me/e/20/e3q8** or connection/OperationalError when deploying:
