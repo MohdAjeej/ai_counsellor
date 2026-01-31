@@ -6,6 +6,12 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
     ],
   },
+  async rewrites() {
+    return [
+      { source: '/favicon.ico', destination: '/icon.svg' },
+      { source: '/favicon.png', destination: '/icon.svg' },
+    ]
+  },
 }
 
 module.exports = nextConfig
