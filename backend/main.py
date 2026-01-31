@@ -21,11 +21,15 @@ load_dotenv()
 
 # Create tables on startup (deferred so app can start even if DB is briefly unreachable)
 def _ensure_tables():
+    import logging
+    log = logging.getLogger("uvicorn.error")
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        import logging
-        logging.getLogger("uvicorn.error").warning("Could not create DB tables (check DATABASE_URL): %s", e)
+        log.warning(
+            "Could not create DB tables: %s. Start PostgreSQL locally (e.g. pg_ctl start or Docker) or set DATABASE_URL to your database.",
+            e,
+        )
 
 app = FastAPI(title="AI Counsellor API", version="1.0.0")
 

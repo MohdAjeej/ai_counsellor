@@ -58,6 +58,9 @@
    INFO:     Application startup complete.
    ```
 
+   **If you see:** `WARNING: Could not create DB tables ... connection refused`  
+   PostgreSQL is not running or not reachable at the host in `DATABASE_URL`. Start PostgreSQL (e.g. start the service, or run `docker run -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres`) and restart the backend. API requests will fail until the database is available.
+
 7. **Test it:**
    - Open browser: `http://localhost:8000/docs`
    - You should see the API documentation
