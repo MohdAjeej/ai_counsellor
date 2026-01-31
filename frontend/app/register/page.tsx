@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store';
-import { authAPI } from '@/lib/api';
+import { authAPI, API_URL } from '@/lib/api';
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -78,8 +78,13 @@ export default function RegisterPage() {
           setError(`Registration failed: ${err.response.status} ${err.response.statusText}`);
         }
       } else if (err.request) {
-        // Request was made but no response received
-        setError('Cannot connect to server. Please make sure the backend is running on http://localhost:8000');
+        // Request was made but no response received (backend not running or unreachable)
+        const isLocal = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+        setError(
+          isLocal
+            ? `Cannot connect to the backend at ${API_URL}. Start it with: cd backend && uvicorn main:app --reload`
+            : `Cannot connect to the server at ${API_URL}. Check that the backend is deployed and reachable.`
+        );
       } else {
         // Something else happened
         setError(err.message || 'Registration failed. Please try again.');

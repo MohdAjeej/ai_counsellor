@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store';
-import { authAPI } from '@/lib/api';
+import { authAPI, API_URL } from '@/lib/api';
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -36,7 +36,16 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      if (err.request && !err.response) {
+        const isLocal = API_URL.includes('localhost') || API_URL.includes('127.0.0.1');
+        setError(
+          isLocal
+            ? `Cannot connect to the backend at ${API_URL}. Start it with: cd backend && uvicorn main:app --reload`
+            : `Cannot connect to the server at ${API_URL}. Check that the backend is deployed and reachable.`
+        );
+      } else {
+        setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
