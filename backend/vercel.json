@@ -4,7 +4,7 @@
   "buildCommand": "echo 'FastAPI backend - no build step'",
   "framework": null,
   "functions": {
-    "app.py": {
+    "api/index.py": {
       "maxDuration": 60
     }
   }
